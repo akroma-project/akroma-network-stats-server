@@ -30,6 +30,7 @@ class Collection {
 
   add(data: any, callback: Function) {
     var node = this.getNodeOrNew({ id: data.id }, data);
+    console.debug('node.add', node);
     if (node !== null) {
       node.setInfo(data, callback);
     } else {

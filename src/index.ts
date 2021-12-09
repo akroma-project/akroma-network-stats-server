@@ -36,35 +36,39 @@ server.on("connection", (socket, request) => {
   console.debug("API", "CON", "Open:", request.socket.remoteAddress, id);
 
   socket.on("message", (data) => {
-    const incoming = data.toString();
-    console.debug(incoming);
-    const message = JSON.parse(incoming);
-    console.log('received: %s', JSON.stringify(message));
-        // if (_.isUndefined(data.secret) || WS_SECRET.indexOf(data.secret) === -1) {
-    //   // socket.end(undefined, { reconnect: false });
-    //   console.error("API", "CON", "Closed - wrong auth", data);
-    //   return false;
-    // }
-    // if (!_.isUndefined(data.id) && !_.isUndefined(data.info)) {
-    //   // data.ip = body.address.ip;
-    //   // data.spark = body.id;
-    //   data.latency = 0; // TODO: removed spark.latency ||
-    //   nodes.add(data, (err: any, info: any) => {
-    //     if (err !== null) {
-    //       console.error("API", "CON", "Connection error:", err);
-    //       return false;
-    //     }
-    //     if (info !== null) {
-    //       socket.emit("ready");
-    //       console.info("API", "CON", "Connected", data.id);
-    //       server.emit("add", info);
-    //       // primus.write({
-    //       //   action: "add",
-    //       //   data: info,
-    //       // });
-    //     }
-    //   });
-    // }
+    const parsed = JSON.parse(data.toString());
+    console.log("received: %s", JSON.stringify(parsed));
+    if (parsed.emit) {
+      const emitType = parsed.emit[0];
+      const emitData = parsed.emit[1];
+      console.debug("emit", emitType.toString());
+      console.debug("emitData", emitData);
+      const secret = emitData.secret;
+      console.debug("emitData:secret", secret);
+      if (_.isUndefined(secret) || WS_SECRET.indexOf(secret) === -1) {
+        server.emit("end", { reconnect: false });
+        // socket.end(undefined, { reconnect: false });F
+        console.error("API", "CON", "Closed - wrong auth", data);
+        return false;
+      }
+
+      if (!_.isUndefined(emitData.id) && !_.isUndefined(emitData.info)) {
+        // data.ip = body.address.ip;
+        // data.spark = body.id;
+        emitData.latency = 0; // TODO: removed spark.latency ||
+        nodes.add(emitData, (err: any, info: any) => {
+          if (err !== null) {
+            console.error("API", "CON", "Connection error:", err);
+            return false;
+          }
+          if (info !== null) {
+            socket.emit("ready");
+            console.info("API", "CON", "Connected", emitData.id);
+            server.emit("add", info);
+          }
+        });
+      }
+    }
   });
 
   // spark.on("update", (data) => {
